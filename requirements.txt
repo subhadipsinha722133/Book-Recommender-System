@@ -1,4 +1,5 @@
-flask
+streamlit
 numpy
 pandas
-gunicorn
+scikit-learn
+Pillow
