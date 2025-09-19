@@ -1,6 +1,4 @@
-Here's a comprehensive `README.md` file with emojis and your personal details:
 
-```markdown
 # 📚 Book Recommendation System
 
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-plastic&logo=Streamlit&logoColor=white)
