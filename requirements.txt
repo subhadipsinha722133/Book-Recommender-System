@@ -1,7 +1,7 @@
-streamlit==1.32.0
-numpy==1.26.4
-pandas==2.2.1
+streamlit
+numpy
+pandas
 scikit-learn==1.4.1.post1
-Pillow==10.2.0
-gdown==5.1.0
-requests==2.31.0
+Pillow
+gdown
+requests
