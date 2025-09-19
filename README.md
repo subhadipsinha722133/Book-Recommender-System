@@ -118,7 +118,6 @@ Want to contribute? Awesome! 🎉
 ⭐ **If you like this project, give it a star on GitHub!** ⭐
 
 Made with ❤️ by Subhadip Sinha
-```
 
 This README includes:
 
