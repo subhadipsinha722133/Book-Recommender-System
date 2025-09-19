@@ -16,6 +16,11 @@ A beautiful and interactive book recommendation system built with Streamlit that
 - ⚡ **Real-time Results** - Instant recommendations with just one click
 - 📱 **Responsive Design** - Works perfectly on desktop and mobile
 
+
+## 📺Live Demo 
+
+[Demo Link](https://book-recommender-system-3jmjygcbcv6he9yovvmgxw.streamlit.app/)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
