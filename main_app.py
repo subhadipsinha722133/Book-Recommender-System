@@ -13,7 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# File URLs
+# File URLs for Google Drive
 FILE_URLS = {
     'popular.pkl': 'YOUR_POPULAR_PKL_DRIVE_LINK',
     'pt.pkl': 'YOUR_PT_PKL_DRIVE_LINK',
@@ -21,24 +21,24 @@ FILE_URLS = {
     'similarity_scores.pkl': 'YOUR_SIMILARITY_SCORES_PKL_DRIVE_LINK'
 }
 
-# Download function
+# Download function for Google Drive files
 @st.cache_data
 def download_file(file_name, url):
-    """Download file from Google Drive"""
+    """Download file from Google Drive if it doesn't exist locally"""
     try:
         output_path = f"./{file_name}"
         
-        # Check if file already exists
+        # Check if file already exists locally
         if os.path.exists(output_path):
             return output_path
             
-        st.info(f"📥 Downloading {file_name}...")
+        st.info(f"📥 Downloading {file_name} from Google Drive...")
         
-        # Google Drive direct download
+        # Download from Google Drive
         if 'drive.google.com' in url or 'uc?id=' in url:
             gdown.download(url, output_path, quiet=False)
         else:
-            # For other URLs
+            # For direct URLs (fallback)
             response = requests.get(url)
             with open(output_path, 'wb') as f:
                 f.write(response.content)
@@ -50,90 +50,74 @@ def download_file(file_name, url):
         st.error(f"❌ Error downloading {file_name}: {e}")
         return None
 
-# Load data with download fallback
+# Load data with automatic download from Google Drive
 @st.cache_data
 def load_data():
-    """Load data files, download if missing"""
-    data_files = {}
-    
-    for file_name, url in FILE_URLS.items():
-        file_path = download_file(file_name, url)
-        if file_path and os.path.exists(file_path):
-            try:
-                with open(file_path, 'rb') as f:
-                    data_files[file_name.split('.')[0]] = pickle.load(f)
-                st.success(f"✅ {file_name} loaded successfully!")
-            except Exception as e:
-                st.error(f"❌ Error loading {file_name}: {e}")
-        else:
-            st.warning(f"⚠️ {file_name} not available")
-    
-    return data_files
-
-# Check if files exist locally first
-def check_local_files():
-    """Check which files exist locally"""
-    local_files = {}
-    for file_name in FILE_URLS.keys():
-        if os.path.exists(f"./{file_name}"):
-            local_files[file_name] = True
-        else:
-            local_files[file_name] = False
-    return local_files
-
-# Main app
-def main():
-    st.title("📚 Book Recommendation System")
-    
-    # Display file status
-    st.sidebar.header("📁 File Status")
-    local_files = check_local_files()
-    for file_name, exists in local_files.items():
-        status = "✅" if exists else "❌"
-        st.sidebar.write(f"{status} {file_name}")
-    
-    # Load data
-    with st.spinner("🔄 Loading data..."):
-        data = load_data()
-    
-    # Check if all data loaded successfully
-    if not all(key in data for key in ['popular', 'pt', 'books', 'similarity_scores']):
-        st.error("❌ Could not load all required data files. Please check the file links.")
+    """Load data files, download from Google Drive if missing locally"""
+    try:
+        # Check and download missing files
+        for file_name, url in FILE_URLS.items():
+            if not os.path.exists(f"./{file_name}"):
+                download_file(file_name, url)
+        
+        # Load all files
+        popular_df = pickle.load(open("popular.pkl", "rb"))
+        pt = pickle.load(open("pt.pkl", "rb"))
+        books = pickle.load(open("books.pkl", "rb"))
+        similarity_scores = pickle.load(open("similarity_scores.pkl", "rb"))
+        
+        return popular_df, pt, books, similarity_scores
+        
+    except FileNotFoundError as e:
+        st.error(f"❌ Error loading data files: {e}")
         st.info("""
-        📋 Required files:
+        📋 Please make sure all data files are available:
         - popular.pkl
         - pt.pkl  
         - books.pkl
         - similarity_scores.pkl
         
-        🔗 Update the FILE_URLS dictionary with your Google Drive links
+        🔗 Update the FILE_URLS dictionary with correct Google Drive links
         """)
-        return
-    
-    popular_df = data['popular']
-    pt = data['pt']
-    books = data['books']
-    similarity_scores = data['similarity_scores']
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ Unexpected error: {e}")
+        st.stop()
+
+# Load data
+popular_df, pt, books, similarity_scores = load_data()
+
+# Sidebar header with your name
+st.sidebar.header("Made By Subhadip 🔥")
+
+# Display file status in sidebar
+st.sidebar.subheader("📁 File Status")
+file_status = {}
+for file_name in FILE_URLS.keys():
+    file_status[file_name] = "✅ Available" if os.path.exists(f"./{file_name}") else "❌ Missing"
+
+for file_name, status in file_status.items():
+    st.sidebar.write(f"{status} - {file_name}")
+
+# Main app
+def main():
+    st.title("📚 Book Recommendation System")
     
     # Sidebar navigation
-    st.sidebar.header("🧭 Navigation")
-    page = st.sidebar.radio("Go to", ["🏠 Home", "🔍 Recommend Books", "ℹ️ About"])
+    page = st.sidebar.radio("🧭 Navigation", ["🏠 Home", "🔍 Recommend Books"])
     
     if page == "🏠 Home":
-        show_home_page(popular_df)
-    elif page == "🔍 Recommend Books":
-        show_recommend_page(pt, books, similarity_scores)
+        show_home_page()
     else:
-        show_about_page()
+        show_recommend_page()
 
-def show_home_page(popular_df):
+def show_home_page():
     st.header("🌟 Popular Books")
-    st.write("Discover the most popular books based on user ratings and reviews!")
     
     # Display popular books in a grid
     cols = st.columns(4)
     
-    for i in range(min(20, len(popular_df))):  # Show first 20 books
+    for i in range(len(popular_df)):
         with cols[i % 4]:
             try:
                 st.image(
@@ -142,16 +126,16 @@ def show_home_page(popular_df):
                     use_container_width=True,
                     caption=popular_df["Book-Title"].values[i]
                 )
+                st.subheader(popular_df["Book-Title"].values[i])
                 st.write(f"**Author:** {popular_df['Book-Author'].values[i]}")
                 st.write(f"**Rating:** {popular_df['avg_rating'].values[i]:.2f} ⭐")
                 st.write(f"**Votes:** {popular_df['num_ratings'].values[i]:,}")
                 st.markdown("---")
             except Exception as e:
-                st.warning(f"Could not display book {i}")
+                st.warning(f"Could not display book {i+1}")
 
-def show_recommend_page(pt, books, similarity_scores):
+def show_recommend_page():
     st.header("🔍 Book Recommendations")
-    st.write("Select a book you like and discover similar books!")
     
     # Book selection dropdown with search
     book_titles = list(pt.index)
@@ -159,7 +143,7 @@ def show_recommend_page(pt, books, similarity_scores):
         "📖 Select a book to get recommendations:",
         book_titles,
         index=0,
-        help="Type to search through the book titles"
+        help="Type to search through thousands of books"
     )
     
     if st.button("🎯 Get Recommendations", type="primary"):
@@ -172,7 +156,7 @@ def show_recommend_page(pt, books, similarity_scores):
                         list(enumerate(similarity_scores[index])),
                         key=lambda x: x[1],
                         reverse=True
-                    )[1:5]  # Top 4 similar books
+                    )[1:5]
                     
                     # Display recommendations
                     st.subheader(f"📚 Books similar to '{selected_book}':")
@@ -192,44 +176,18 @@ def show_recommend_page(pt, books, similarity_scores):
                                         use_container_width=True,
                                         caption=book_data["Book-Title"].values[0]
                                     )
+                                    st.subheader(book_data["Book-Title"].values[0])
                                     st.write(f"**Author:** {book_data['Book-Author'].values[0]}")
-                                    st.write(f"**Similarity:** {score:.3f}")
+                                    st.write(f"**Similarity Score:** {score:.3f}")
+                                    # Visual similarity indicator
                                     st.progress(float(score))
-                                except (IndexError, KeyError) as e:
-                                    st.warning("Could not load book information")
+                                except (IndexError, KeyError):
+                                    st.warning("Could not load complete book information")
                     
                 except IndexError:
                     st.error("❌ Book not found in the database. Please select another book.")
                 except Exception as e:
                     st.error(f"❌ An error occurred: {e}")
-
-def show_about_page():
-    st.header("ℹ️ About This App")
-    st.write("""
-    ## 📚 Book Recommendation System
-    
-    This application provides intelligent book recommendations using collaborative filtering.
-    
-    ### 🎯 Features:
-    - Discover popular books with ratings
-    - Get personalized book recommendations
-    - Beautiful interface with book covers
-    - Real-time results
-    
-    ### 🛠️ Built With:
-    - Python 🐍
-    - Streamlit 🎈
-    - Scikit-learn 🤖
-    - Pandas 📊
-    
-    ### 👨‍💻 Developer:
-    **Subhadip Sinha**  
-    GitHub: [@subhadipsinha722133](https://github.com/subhadipsinha722133)
-    
-    ---
-    
-    *Note: This app requires book data files to function properly.*
-    """)
 
 if __name__ == "__main__":
     main()
