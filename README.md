@@ -27,7 +27,7 @@ A beautiful and interactive book recommendation system built with Streamlit that
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/subhadipsinha722133/book-recommendation-system.git
+   git clone https://github.com/subhadipsinha722133/Book-Recommender-System.git
    cd book-recommendation-system
    ```
 
