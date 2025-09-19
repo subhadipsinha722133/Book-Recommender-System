@@ -50,7 +50,7 @@ A beautiful and interactive book recommendation system built with Streamlit that
 
 5. **Run the application**
    ```bash
-   streamlit run app.py
+   streamlit run main_app.py
    ```
 
 6. **Open your browser** and go to `http://localhost:8501`
